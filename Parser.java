@@ -33,7 +33,7 @@ public class Parser {
 
         // Shunting Yard Algorithm
         // Imprime el resultado de operar el input
-        // System.out.println("Resultado: " + this.operandos.peek());
+        System.out.println("Resultado: " + this.operandos.peek());
 
         // Verifica si terminamos de consumir el input
         if(this.next != this.tokens.size()) {
@@ -48,7 +48,7 @@ public class Parser {
         if(this.next < this.tokens.size() && this.tokens.get(this.next).equals(id)) {
             
             // Codigo para el Shunting Yard Algorithm
-            /*
+            
             if (id == Token.NUMBER) {
 				// Encontramos un numero
 				// Debemos guardarlo en el stack de operandos
@@ -67,7 +67,6 @@ public class Parser {
 				// Que pushOp haga el trabajo, no quiero hacerlo yo aqui
 				pushOp( this.tokens.get(this.next) );
 			}
-			*/
 
             this.next++;
             return true;
@@ -81,13 +80,21 @@ public class Parser {
 
         /* El codigo de esta seccion se explicara en clase */
 
-        switch(op.getId()) {
-        	case Token.PLUS:
-        		return 1;
-        	case Token.MULT:
-        		return 2;
-        	default:
-        		return -1;
+        switch (op.getId()) 
+        {
+            case Token.LPAREN:
+                return 0;  
+            case Token.PLUS:
+            case Token.MINUS:
+                return 1;
+            case Token.MULT:
+            case Token.DIV:
+            case Token.MOD:
+                return 2;
+            case Token.EXP:       
+                return 3; 
+            default:
+                return -1;
         }
     }
 
@@ -96,25 +103,61 @@ public class Parser {
 
         /* TODO: Su codigo aqui */
 
-        /* El codigo de esta seccion se explicara en clase */
+        double a = this.operandos.pop();
+        double b = this.operandos.pop();
 
-        if (op.equals(Token.PLUS)) {
-        	double a = this.operandos.pop();
-        	double b = this.operandos.pop();
-        	// print para debug, quitarlo al terminar
-        	System.out.println("suma " + a + " + " + b);
-        	this.operandos.push(a + b);
-        } else if (op.equals(Token.MULT)) {
-        	double a = this.operandos.pop();
-        	double b = this.operandos.pop();
-        	// print para debug, quitarlo al terminar
-        	System.out.println("mult " + a + " * " + b);
-        	this.operandos.push(a * b);
+        switch (op.getId()) 
+        {
+            case Token.PLUS: 
+                operandos.push(a + b); 
+                break;
+            case Token.MINUS: 
+                operandos.push(a - b); 
+                break;
+            case Token.MULT: 
+                operandos.push(a * b); 
+                break;
+            case Token.DIV: 
+                operandos.push(a / b);
+                break;
+            case Token.MOD: 
+                operandos.push(a % b); 
+                break;
+            case Token.EXP: 
+                operandos.push(Math.pow(a, b)); 
+                break;
         }
+
+        /* El codigo de esta seccion se explicara en clase */
     }
 
     private void pushOp(Token op) {
         /* TODO: Su codigo aqui */
+
+        if (op.getId() == Token.LPAREN) 
+        {
+            operadores.push(op);
+            return;
+        }
+
+        if (op.getId() == Token.RPAREN) 
+        {
+            while (!operadores.empty() && operadores.peek().getId() != Token.LPAREN) 
+            {
+                popOp();
+            }
+            if (!operadores.empty() && operadores.peek().getId() == Token.LPAREN) 
+            {
+                operadores.pop();
+            }
+            return;
+        }
+
+        while ((!operadores.empty()) && (pre(op) <= pre(operadores.peek())) && (operadores.peek().getId() != Token.LPAREN)) 
+        {
+            popOp();
+        }
+        operadores.push(op);
 
         /* Casi todo el codigo para esta seccion se vera en clase */
     	
@@ -133,9 +176,116 @@ public class Parser {
         return E() && term(Token.SEMI);
     }
 
-    private boolean E() {
+    private boolean E() 
+    {
+        if (G()) 
+        {
+            return F();
+        }
         return false;
     }
 
     /* TODO: sus otras funciones aqui */
+
+    private boolean F()
+    {
+        if (term(Token.PLUS)) 
+        {
+            if (G()) 
+            {
+                return F();
+            }
+            return false;
+        } 
+        else if (term(Token.MINUS)) 
+        {
+            if (G()) 
+            {
+                return F();
+            }
+            return false;
+        }
+        return true;
+    }
+
+    private boolean G()
+    {
+        if (I()) 
+        {
+            return H();
+        }
+        return false;
+    }
+
+    private boolean H()
+    {
+        if (term(Token.MULT)) 
+        {
+            if (I()) 
+            {
+                return H();
+            }
+            return false;
+        } 
+        else if (term(Token.DIV)) 
+        {
+            if (I()) 
+            {
+                return H();
+            }
+            return false;
+        } 
+        else if (term(Token.MOD)) 
+        {
+            if (I()) 
+            {
+                return H();
+            }
+            return false;
+        }
+        return true; 
+    }
+
+    private boolean I()
+    {
+        if (K()) 
+        {
+            return J();
+        }
+        return false;
+    }
+
+    private boolean J()
+    {
+        if (term(Token.EXP)) 
+        {
+            if (K()) 
+            {
+                return J();
+            }
+            return false;
+        }
+        return true; 
+    }
+
+    private boolean K()
+    {
+        if (term(Token.MINUS)) 
+        {
+            return K();
+        } 
+        else if (term(Token.LPAREN)) 
+        {
+            if (E()) 
+            {
+                return term(Token.RPAREN);
+            }
+            return false;
+        } 
+        else if (term(Token.NUMBER)) 
+        {
+            return true;
+        }
+        return false;
+    }
 }
